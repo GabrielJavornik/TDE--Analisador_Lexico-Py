@@ -15,6 +15,7 @@ from automato import (
 
 FUNDO = "#eef3f8"
 PAINEL = "#ffffff"
+FAIXA = "#e4edf7"
 AZUL = "#173354"
 TEXTO = "#253850"
 SUAVE = "#4d6076"
@@ -30,8 +31,23 @@ def configurar_estilos(janela):
     estilo.configure(".", font=("Segoe UI", 10), foreground=TEXTO)
     estilo.configure("TFrame", background=FUNDO)
     estilo.configure("TLabel", background=FUNDO)
-    estilo.configure("Titulo.TLabel", font=("Segoe UI", 22, "bold"), foreground=AZUL)
-    estilo.configure("Subtitulo.TLabel", foreground=SUAVE)
+    estilo.configure("Faixa.TFrame", background=FAIXA)
+    estilo.configure("Faixa.TLabel", background=FAIXA)
+    estilo.configure(
+        "Titulo.TLabel", background=FAIXA, foreground=AZUL,
+        font=("Segoe UI", 22, "bold"),
+    )
+    estilo.configure("Subtitulo.TLabel", background=FAIXA, foreground=SUAVE)
+    estilo.configure(
+        "TituloModelo.TLabel", background=FAIXA, foreground=AZUL,
+        font=("Segoe UI", 12, "bold"),
+    )
+    estilo.configure(
+        "RotuloModelo.TLabel", background=FAIXA, foreground=SUAVE,
+        font=("Segoe UI", 10, "bold"),
+    )
+    estilo.configure("Modelo.TLabel", background=FAIXA, font=("Consolas", 10))
+    estilo.configure("TSeparator", background=BORDA)
     estilo.configure(
         "Painel.TFrame", background=PAINEL, bordercolor=BORDA,
         borderwidth=1, relief="solid",
@@ -46,7 +62,8 @@ def configurar_estilos(janela):
         "Estado.TLabel", background=PAINEL, foreground=AZUL,
         font=("Consolas", 13, "bold"),
     )
-    estilo.configure("Modelo.TLabel", background=PAINEL, font=("Consolas", 10))
+    estilo.configure("Transicao.TFrame", background=FUNDO)
+    estilo.configure("Transicao.TLabel", background=FUNDO, foreground=AZUL, font=("Consolas", 10))
 
     for nome, cor in (("Resultado", SUAVE), ("Aceita", VERDE), ("Rejeitada", VERMELHO)):
         estilo.configure(
@@ -55,15 +72,15 @@ def configurar_estilos(janela):
         )
 
     estilo.configure(
-        "Celula.TLabel", background="#f3f6fa", padding=(6, 3), anchor="center",
+        "Celula.TLabel", background="#f3f6fa", padding=(6, 1), anchor="center",
     )
     estilo.configure(
         "Cabecalho.TLabel", background="#e5edf6", foreground=AZUL,
-        font=("Segoe UI", 10, "bold"), padding=(6, 3), anchor="center",
+        font=("Segoe UI", 10, "bold"), padding=(6, 1), anchor="center",
     )
     estilo.configure(
         "Destaque.TLabel", background=AZUL, foreground=PAINEL,
-        font=("Segoe UI", 10, "bold"), padding=(6, 3), anchor="center",
+        font=("Segoe UI", 10, "bold"), padding=(6, 1), anchor="center",
     )
     estilo.configure("TEntry", fieldbackground=PAINEL, bordercolor=BORDA, padding=6)
     estilo.map("TEntry", bordercolor=[("focus", "#497bb4")])
@@ -73,7 +90,10 @@ def configurar_estilos(janela):
         "Treeview", background=PAINEL, fieldbackground=PAINEL,
         bordercolor=BORDA, rowheight=25,
     )
-    estilo.configure("Treeview.Heading", background="#e5edf6", foreground=AZUL)
+    estilo.configure(
+        "Treeview.Heading", background="#e5edf6", foreground=AZUL,
+        font=("Segoe UI", 10, "bold"), padding=(6, 4),
+    )
     estilo.map(
         "Treeview", background=[("selected", AZUL)], foreground=[("selected", PAINEL)],
     )
@@ -98,45 +118,74 @@ class JanelaAnalisador:
         self.celulas = {}
         self.celula_destacada = None
 
+        self.montar_cabecalho(janela)
         pagina = ttk.Frame(janela, padding=(20, 12))
         pagina.pack(fill="both", expand=True)
         pagina.columnconfigure(0, weight=3)
         pagina.columnconfigure(1, weight=2)
-        pagina.rowconfigure(3, weight=1)
-        ttk.Label(pagina, text="Analisador léxico", style="Titulo.TLabel").grid(
-            row=0, column=0, columnspan=2, sticky="w",
-        )
-        ttk.Label(
-            pagina, text="Linguagens Formais  ·  Lista 2  ·  Exercício 2, letra j",
-            style="Subtitulo.TLabel",
-        ).grid(row=1, column=0, columnspan=2, sticky="w", pady=(0, 10))
+        pagina.rowconfigure(1, weight=3)
+        pagina.rowconfigure(2, weight=2)
         self.montar_entrada(pagina)
-
-        esquerda = ttk.Frame(pagina)
-        esquerda.grid(row=3, column=0, sticky="nsew", padx=(0, 7))
-        esquerda.columnconfigure(0, weight=1)
-        esquerda.rowconfigure(0, weight=3)
-        esquerda.rowconfigure(1, weight=2)
-        self.montar_analise(esquerda)
-        self.montar_historico(esquerda)
-
-        direita = ttk.Frame(pagina)
-        direita.grid(row=3, column=1, sticky="nsew", padx=(7, 0))
-        direita.columnconfigure(0, weight=1)
-        self.montar_tabela(direita)
-        self.montar_modelo(direita)
+        self.montar_analise(pagina)
+        self.montar_tabela(pagina)
+        self.montar_historico(pagina)
 
         self.palavra.trace_add("write", self.atualizar_analise)
         self.atualizar_analise()
         janela.update_idletasks()
+        largura_minima = max(820, janela.winfo_reqwidth())
         altura_minima = janela.winfo_reqheight()
-        janela.minsize(max(820, janela.winfo_reqwidth()), altura_minima)
-        janela.geometry(f"1000x{max(730, altura_minima)}")
+        janela.minsize(largura_minima, altura_minima)
+        janela.geometry(f"{max(1040, largura_minima)}x{max(675, altura_minima)}")
         self.entrada.focus_set()
+
+    def montar_cabecalho(self, pai):
+        faixa = ttk.Frame(pai, padding=(20, 12), style="Faixa.TFrame")
+        faixa.pack(fill="x")
+        faixa.columnconfigure(2, weight=1)
+
+        identificacao = ttk.Frame(faixa, style="Faixa.TFrame")
+        identificacao.grid(row=0, column=0, sticky="w")
+        ttk.Label(identificacao, text="Analisador léxico", style="Titulo.TLabel").pack(anchor="w")
+        ttk.Label(
+            identificacao, text="Linguagens Formais\nLista 2 · Exercício 2, letra j",
+            style="Subtitulo.TLabel", justify="left",
+        ).pack(anchor="w", pady=(3, 0))
+        ttk.Separator(faixa, orient="vertical").grid(row=0, column=1, sticky="ns", padx=20)
+
+        modelo = ttk.Frame(faixa, style="Faixa.TFrame")
+        modelo.grid(row=0, column=2, sticky="ew")
+        ttk.Label(modelo, text="Modelo formal", style="TituloModelo.TLabel").grid(
+            row=0, column=0, columnspan=3, sticky="w", pady=(0, 5),
+        )
+        secoes = (
+            (
+                "Linguagem", "Palavras sobre {a, b, c} com um número ímpar de c.",
+                "Faixa.TLabel", 190,
+            ),
+            (
+                "AFD mínimo", "M = ({qPar, qImpar}, {a, b, c},\n     δ, qPar, {qImpar})",
+                "Modelo.TLabel", 0,
+            ),
+            (
+                "Gramática regular · S inicial", "S ::= aS | bS | cA\nA ::= aA | bA | cS | ε",
+                "Modelo.TLabel", 0,
+            ),
+        )
+        for coluna, (titulo, texto, estilo, largura) in enumerate(secoes):
+            modelo.columnconfigure(coluna, weight=1)
+            margem = (0, 16) if coluna < len(secoes) - 1 else (0, 0)
+            ttk.Label(modelo, text=titulo, style="RotuloModelo.TLabel").grid(
+                row=1, column=coluna, sticky="w", padx=margem, pady=(0, 3),
+            )
+            ttk.Label(
+                modelo, text=texto, style=estilo, justify="left", wraplength=largura,
+            ).grid(row=2, column=coluna, sticky="nw", padx=margem)
+        ttk.Separator(pai, orient="horizontal").pack(fill="x")
 
     def montar_entrada(self, pai):
         painel = ttk.Frame(pai, padding=12, style="Painel.TFrame")
-        painel.grid(row=2, column=0, columnspan=2, sticky="ew", pady=(0, 12))
+        painel.grid(row=0, column=0, columnspan=2, sticky="ew", pady=(0, 12))
         painel.columnconfigure(0, weight=1)
         painel.columnconfigure(1, minsize=200)
         ttk.Label(
@@ -159,8 +208,8 @@ class JanelaAnalisador:
         self.resultado.grid(row=1, column=1, sticky="w", padx=(22, 0))
 
     def montar_analise(self, pai):
-        painel = ttk.Frame(pai, padding=12, style="Painel.TFrame")
-        painel.grid(row=0, column=0, sticky="nsew", pady=(0, 12))
+        painel = ttk.Frame(pai, padding=(12, 7), style="Painel.TFrame")
+        painel.grid(row=1, column=0, sticky="nsew", padx=(0, 6), pady=(0, 12))
         painel.columnconfigure(0, weight=1)
         painel.rowconfigure(4, weight=1)
         ttk.Label(painel, text="Análise da palavra", style="Secao.TLabel").grid(
@@ -170,11 +219,11 @@ class JanelaAnalisador:
             row=0, column=1, sticky="e", padx=(10, 0),
         )
         ttk.Label(painel, text="Cadeia analisada", style="Nota.TLabel").grid(
-            row=1, column=0, sticky="w", pady=(7, 2),
+            row=1, column=0, sticky="w", pady=(4, 2),
         )
         self.rotulo_estado = ttk.Label(painel, text="Estado atual", style="Nota.TLabel")
         self.rotulo_estado.grid(
-            row=1, column=1, sticky="w", padx=(10, 0), pady=(7, 2),
+            row=1, column=1, sticky="w", padx=(10, 0), pady=(4, 2),
         )
         campo_cadeia = ttk.Entry(
             painel, textvariable=self.cadeia, state="readonly",
@@ -185,7 +234,7 @@ class JanelaAnalisador:
             row=2, column=1, sticky="w", padx=(10, 0),
         )
         ttk.Label(painel, text="Percurso das transições", style="Nota.TLabel").grid(
-            row=3, column=0, columnspan=2, sticky="w", pady=(8, 3),
+            row=3, column=0, columnspan=2, sticky="w", pady=(5, 3),
         )
         self.percurso = self.criar_lista(
             painel, 4, (("Passo", 52), ("Origem", 86), ("Letra", 60), ("Destino", 88)),
@@ -194,7 +243,7 @@ class JanelaAnalisador:
 
     def montar_historico(self, pai):
         painel = ttk.Frame(pai, padding=12, style="Painel.TFrame")
-        painel.grid(row=1, column=0, sticky="nsew")
+        painel.grid(row=2, column=0, columnspan=2, sticky="nsew")
         painel.columnconfigure(0, weight=1)
         painel.rowconfigure(1, weight=1)
         ttk.Label(painel, text="Histórico", style="Secao.TLabel").grid(
@@ -229,11 +278,11 @@ class JanelaAnalisador:
         return lista
 
     def montar_tabela(self, pai):
-        painel = ttk.Frame(pai, padding=12, style="Painel.TFrame")
-        painel.grid(row=0, column=0, sticky="ew", pady=(0, 12))
+        painel = ttk.Frame(pai, padding=(12, 7), style="Painel.TFrame")
+        painel.grid(row=1, column=1, sticky="nsew", padx=(6, 0), pady=(0, 12))
         ttk.Label(painel, text="Tabela de transições", style="Secao.TLabel").pack(anchor="w")
         matriz = ttk.Frame(painel, style="Painel.TFrame")
-        matriz.pack(fill="x", pady=(6, 7))
+        matriz.pack(fill="x", pady=(4, 5))
         estados = list(TABELA_TRANSICOES)
         for coluna, texto in enumerate(("Símbolo", *estados)):
             matriz.columnconfigure(coluna, weight=1, uniform="transicoes")
@@ -251,46 +300,19 @@ class JanelaAnalisador:
                 for letra in letras:
                     self.celulas[estado, letra] = celula
 
-        ultima = ttk.Frame(painel, style="Painel.TFrame")
-        ultima.pack(fill="x")
-        ttk.Label(ultima, text="Última transição", style="Nota.TLabel").pack(
-            side="left", padx=(0, 8),
-        )
-        ttk.Label(ultima, textvariable=self.ultima_transicao, style="Modelo.TLabel").pack(
-            side="left",
-        )
+        ultima = ttk.Frame(painel, padding=(8, 4), style="Transicao.TFrame")
+        ultima.pack(fill="x", pady=(1, 4))
+        ttk.Label(ultima, text="Última transição").pack(side="left", padx=(0, 10))
+        ttk.Label(ultima, textvariable=self.ultima_transicao, style="Transicao.TLabel").pack(side="left")
+        ttk.Label(
+            painel, text="Letras de d a z levam a qErro até a próxima palavra.",
+            style="Nota.TLabel", wraplength=340, justify="left",
+        ).pack(anchor="w")
 
     def criar_celula(self, matriz, linha, coluna, texto, estilo):
         celula = ttk.Label(matriz, text=texto, style=estilo)
         celula.grid(row=linha, column=coluna, sticky="ew", padx=1, pady=1)
         return celula
-
-    def montar_modelo(self, pai):
-        painel = ttk.Frame(pai, padding=12, style="Painel.TFrame")
-        painel.grid(row=1, column=0, sticky="ew")
-        ttk.Label(painel, text="Modelo formal", style="Secao.TLabel").pack(anchor="w")
-        ttk.Label(
-            painel, text="Linguagem · Palavras sobre {a, b, c} com um número ímpar de c.",
-            style="Painel.TLabel", wraplength=300,
-        ).pack(anchor="w", pady=(4, 5))
-        ttk.Label(painel, text="AFD mínimo", style="Nota.TLabel").pack(anchor="w")
-        ttk.Label(
-            painel, text="M = ({qPar, qImpar}, {a, b, c}, δ,\n     qPar, {qImpar})",
-            style="Modelo.TLabel",
-        ).pack(anchor="w", pady=(0, 5))
-        ttk.Label(
-            painel, text="Gramática regular · S inicial", style="Nota.TLabel",
-        ).pack(anchor="w")
-        ttk.Label(
-            painel, text="S ::= aS | bS | cA\nA ::= aA | bA | cS | ε",
-            style="Modelo.TLabel",
-        ).pack(anchor="w", pady=(0, 5))
-        ttk.Label(
-            painel,
-            text="Na janela, qErro recebe as letras de d a z, fora de {a, b, c}, "
-                 "e permanece ativo até a próxima palavra.",
-            style="Nota.TLabel", wraplength=300,
-        ).pack(anchor="w")
 
     def validar_entrada(self, texto):
         return all(eh_letra_minuscula(letra) for letra in texto)
