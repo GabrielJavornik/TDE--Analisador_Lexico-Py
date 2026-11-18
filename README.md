@@ -35,14 +35,3 @@ Na janela, o estado `qErro` recebe as letras minúsculas de `d` a `z`. Todas as 
 ## Tabela de transições e alteração ao vivo
 
 A tabela `TABELA_TRANSICOES` fica em [automato.py](automato.py). A função `analisar` começa em `qPar` e consulta `TABELA_TRANSICOES[estado][simbolo]` para cada letra. O programa encerra a palavra em `main.py` e verifica se o estado atingido é `qImpar`.
-
-Se o professor pedir que `j` preserve a paridade, faça as duas alterações abaixo na tabela. Você pode editar os valores no dicionário ou acrescentar estas linhas logo após a definição dele.
-
-```python
-TABELA_TRANSICOES["qPar"]["j"] = "qPar"
-TABELA_TRANSICOES["qImpar"]["j"] = "qImpar"
-```
-
-Mantenha `"j": "qErro"` na linha de `qErro` e reabra a janela. Com essa alteração, `jcj` seria reconhecida e `jj` seria rejeitada.
-
-Se a mudança passar a valer para o exercício, inclua também `j` no alfabeto do modelo formal e acrescente `jS` e `jA` às produções de `S` e `A`, respectivamente. Os arquivos entregues usam o alfabeto oficial `{a, b, c}`.
